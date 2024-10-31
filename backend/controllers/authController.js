@@ -17,9 +17,10 @@ export const authSuccess = async (req, res) => {
 	}
 	try {
 		const email = req.user.email;
+		const name = req.user.displayName
 		const checkMailResponse = await axios.post(
 			"http://localhost:3001/api/checkMail",
-			{ email }
+			{ email ,name}
 		);
 
 		if (checkMailResponse.data.emailExists) {

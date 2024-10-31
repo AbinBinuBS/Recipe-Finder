@@ -3,8 +3,11 @@ import authRouter from './routes/authRouter.js';
 import session from 'express-session';
 import passport from 'passport';
 import userRouter from './routes/userRouter.js'
+import connectDB from './config/db.js';
 const app = express();
 const port = 3001;
+
+connectDB();
 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));

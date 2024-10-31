@@ -1,8 +1,11 @@
+import HomeBody from "../components/homeBody"
 
 
 const HomePage = () =>{
     return(
-        <div className="w-screen h-screen bg-slate-500"></div>
+        <div className="w-screen h-screen ">
+            <HomeBody/>
+        </div>
     )
 }
 
