@@ -1,56 +1,75 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { clearTokens, setTokens } from '../redux/userSlice';
-import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { clearTokens } from '../redux/userSlice';
+import { useDispatch } from 'react-redux';
+import axios from 'axios'
 
 const HomeBody = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState('all');
+  const [recipes, setRecipes] = useState([]);
+  const [likedRecipes, setLikedRecipes] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalRecipes, setTotalRecipes] = useState(0);
+  const pageSize = 6;
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const handleLogout = () => {
     dispatch(clearTokens());
-    navigate('/'); 
+    navigate('/');
   };
-
-  const recipes = [
-    {
-      id: 1,
-      name: "Chicken Biryani",
-      cuisine: "Indian",
-      prepTime: "45 mins",
-      servings: 4,
-      image: "/api/placeholder/400/250",
-      description: "Aromatic basmati rice cooked with tender chicken and spices"
-    },
-    {
-      id: 2,
-      name: "Hyderabadi Biryani",
-      cuisine: "Indian",
-      prepTime: "60 mins",
-      servings: 6,
-      image: "/api/placeholder/400/250",
-      description: "Famous dum-cooked biryani with saffron and tender meat"
-    },
-    {
-      id: 3,
-      name: "Pasta Carbonara",
-      cuisine: "Italian",
-      prepTime: "30 mins",
-      servings: 2,
-      image: "/api/placeholder/400/250",
-      description: "Creamy pasta with eggs, cheese, and pancetta"
-    }
-  ];
 
   const cuisines = ["all", "Indian", "Italian", "Chinese", "Mexican", "Thai"];
 
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCuisine = selectedCuisine === 'all' || recipe.cuisine === selectedCuisine;
-    return matchesSearch && matchesCuisine;
-  });
+  useEffect(() => {
+    fetchRecipes();
+  }, [searchQuery, selectedCuisine, currentPage]);
+
+  const fetchRecipes = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`/api/recipes?page=${currentPage}&pageSize=${pageSize}&search=${searchQuery}&cuisine=${selectedCuisine}`);
+      
+      const adaptedRecipes = response.data.results.map(recipe => ({
+        id: recipe.id,
+        name: recipe.title,
+        image: recipe.image,
+        cuisine: selectedCuisine === 'all' ? 'Mixed' : selectedCuisine,
+      }));
+      console.log("Fetched recipes:", response.data)
+      setRecipes(adaptedRecipes);
+      
+      const total = response.data.totalResults;
+      setTotalRecipes(total);
+      setTotalPages(Math.ceil(total / pageSize));
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+
+  const handleView = (recipeId) => {
+    navigate(`/recipeDetails/${recipeId}`);
+  }
+
+
+  const toggleLike = (recipeId) => {
+    setLikedRecipes(prev => ({
+      ...prev,
+      [recipeId]: !prev[recipeId]
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
@@ -100,7 +119,10 @@ const HomeBody = () => {
               placeholder="Search recipes..."
               className="w-full pl-10 pr-4 py-2 border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/80 backdrop-blur-sm"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
           
@@ -108,7 +130,10 @@ const HomeBody = () => {
             {cuisines.map(cuisine => (
               <button
                 key={cuisine}
-                onClick={() => setSelectedCuisine(cuisine)}
+                onClick={() => {
+                  setSelectedCuisine(cuisine);
+                  setCurrentPage(1); 
+                }}
                 className={`px-4 py-2 rounded-lg capitalize transition-all ${
                   selectedCuisine === cuisine
                     ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/30'
@@ -121,91 +146,139 @@ const HomeBody = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRecipes.map(recipe => (
-            <div
-              key={recipe.id}
-              className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all hover:-translate-y-1 duration-300"
-            >
-              <div className="relative">
-                <img
-                  src={recipe.image}
-                  alt={recipe.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h3 className="text-xl font-semibold">{recipe.name}</h3>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 space-y-4">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-semibold">{recipe.name}</h3>
-                  <span className="px-3 py-1 bg-gradient-to-r from-orange-600 to-red-600 text-white text-sm rounded-full">
-                    {recipe.cuisine}
-                  </span>
-                </div>
-                
-                <p className="text-gray-600 text-sm">{recipe.description}</p>
-                
-                <div className="flex justify-between text-sm text-gray-500 border-t border-orange-100 pt-4">
-                  <div className="flex items-center gap-1">
-                    <svg
-                      className="h-4 w-4 text-orange-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {recipe.prepTime}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <svg
-                      className="h-4 w-4 text-orange-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
-                    {recipe.servings} servings
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredRecipes.length === 0 && (
-          <div className="text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-orange-400 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 13l-7 7-7-7m14-8l-7 7-7-7"
-              />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900">No recipes found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recipes.map(recipe => (
+                <div
+                  key={recipe.id}
+                  className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all hover:-translate-y-1 duration-300"
+                >
+                  <div className="relative">
+                    <img
+                      src={recipe.image}
+                      alt={recipe.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-4 left-4 right-4 text-white">
+                        <h3 className="text-xl font-semibold">{recipe.name}</h3>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-xl font-semibold">{recipe.name}</h3>
+                      <button onClick={()=>handleView(recipe.id)} className="px-3 py-1 bg-gradient-to-r from-orange-600 to-red-600 text-white text-sm rounded-full"> View </button>
+                    </div>
+                    
+                    <div className="flex justify-between items-center border-t border-orange-100 pt-4">
+                      <button 
+                        onClick={() => toggleLike(recipe.id)}
+                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors"
+                      >
+                        <svg 
+                          className={`h-5 w-5 ${likedRecipes[recipe.id] ? 'text-red-500 fill-current' : 'text-gray-400'}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                          />
+                        </svg>
+                        {likedRecipes[recipe.id] ? 'Liked' : 'Like'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {recipes.length === 0 ? (
+              <div className="text-center py-12">
+                <svg
+                  className="mx-auto h-12 w-12 text-orange-400 mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 13l-7 7-7-7m14-8l-7 7-7-7"
+                  />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-900">No recipes found</h3>
+                <p className="text-gray-500">Try adjusting your search or filters</p>
+              </div>
+            ) : (
+              <div className="mt-8 flex flex-col items-center space-y-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400'
+                        : 'bg-white hover:bg-orange-50 text-gray-700 border border-orange-200'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        const distance = Math.abs(page - currentPage);
+                        return distance === 0 || distance === 1 || page === 1 || page === totalPages;
+                      })
+                      .map((page, index, array) => (
+                        <React.Fragment key={page}>
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="text-gray-400">...</span>
+                          )}
+                          <button
+                            onClick={() => handlePageChange(page)}
+                            className={`w-10 h-10 rounded-lg ${
+                              currentPage === page
+                                ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white'
+                                : 'bg-white hover:bg-orange-50 text-gray-700 border border-orange-200'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400'
+                        : 'bg-white hover:bg-orange-50 text-gray-700 border border-orange-200'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <p className="text-gray-600">
+                  Showing {(currentPage - 1) * pageSize + 1}-
+                  {Math.min(currentPage * pageSize, totalRecipes)} of {totalRecipes} recipes
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

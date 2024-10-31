@@ -7,6 +7,7 @@ import RegisterPage from './pages/registerPage';
 import HomePage from './pages/homePage';
 import ProtectedRoute from './protectiveCheck/protectedRoute.jsx';
 import PublicRoute from './protectiveCheck/publicRoute.jsx'
+import RecipeDetailsPage from './pages/recipeDetailsPage.jsx';
 
 function App() {
   return (
@@ -22,6 +23,11 @@ function App() {
             <Route path="/home" element={
               <ProtectedRoute>
                 <HomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/recipeDetails/:recipeId" element={
+              <ProtectedRoute>
+                <RecipeDetailsPage />
               </ProtectedRoute>
             } />
           </Routes>
