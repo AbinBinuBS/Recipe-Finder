@@ -20,8 +20,6 @@ const userSlice = createSlice({
   },
 });
 
-// Export the actions to be used in components
 export const { setTokens, clearTokens } = userSlice.actions;
 
-// Export the reducer to be used in the store
 export default userSlice.reducer;

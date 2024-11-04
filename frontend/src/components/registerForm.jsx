@@ -49,8 +49,6 @@ const RegisterBody = () => {
             </svg>
             <span>Continue with Google</span>
           </button>
-
-          {/* Terms Text */}
           <p className="text-center text-xs text-gray-500">
             By continuing, you agree to our{' '}
             <a href="#" className="text-orange-600 hover:underline">Terms</a>

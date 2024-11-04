@@ -8,12 +8,15 @@ import HomePage from './pages/homePage';
 import ProtectedRoute from './protectiveCheck/protectedRoute.jsx';
 import PublicRoute from './protectiveCheck/publicRoute.jsx'
 import RecipeDetailsPage from './pages/recipeDetailsPage.jsx';
+import LikedPage from './pages/likedPage.jsx';
+import { Toaster} from 'react-hot-toast'
 
 function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
+        <Toaster position="top-center" />
           <Routes>
             <Route path="/" element={
               <PublicRoute>
@@ -28,6 +31,11 @@ function App() {
             <Route path="/recipeDetails/:recipeId" element={
               <ProtectedRoute>
                 <RecipeDetailsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/liked" element={
+              <ProtectedRoute>
+                <LikedPage />
               </ProtectedRoute>
             } />
           </Routes>

@@ -1,12 +1,14 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import User from "../model/userModel.js";
 
 dotenv.config();
 
 
 export const getRecipes = async (req, res) => {
     try {
-        const { page, pageSize, search= "", cuisine } = req.query;
+        const userId = req.user._id
+        const { page, pageSize, search= "" } = req.query;
         const apiKey = process.env.SPOONACULAR_API_KEY;
         let response
         if(search == ""){
@@ -21,17 +23,24 @@ export const getRecipes = async (req, res) => {
             response = await axios.get(`https://api.spoonacular.com/recipes/complexSearch`, {
                 params: {
                     query: search,
-                    cuisine,
                     number: pageSize,
                     offset: (page - 1) * pageSize,
                     apiKey,
                 }
             });
         }
-        
-
-        console.log("Fetched recipes:", response.data);
-        res.json(response.data);
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.json({
+            recipes: response.data,
+            user: {
+                name: user.name,
+                email: user.email,
+                liked: user.liked
+            }
+        });
     } catch (error) {
         console.error("Error fetching recipes:", error);
         res.status(500).send("Internal Server Error");
@@ -42,12 +51,10 @@ export const getRecipes = async (req, res) => {
 export const getRecipeInformation = async (req, res) => {
     try {
         const { recipeId } = req.params; 
-        console.log("Recipe ID:", recipeId);
         const apiKey = process.env.SPOONACULAR_API_KEY;
 
         const response = await axios.get(`https://api.spoonacular.com/recipes/${recipeId}/information?apiKey=${apiKey}`);
         
-        console.log("API Response:", response.data); 
         res.status(200).json(response.data);
     } catch (error) {
         console.error("Error fetching recipes:", error);

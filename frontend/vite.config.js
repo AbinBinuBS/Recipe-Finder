@@ -1,15 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      external: ['lodash']
+    }
+  },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',  // Replace with your backend's port
+        target: 'https://recipe-finder-backend-idhn.onrender.com',
         changeOrigin: true,
-        secure: false, // Set to false if you're using HTTP
+        secure: false,
       },
     },
   },
